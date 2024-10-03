@@ -1,0 +1,11 @@
+## Interface: 110005
+## Title: Dinks' Immersive Greetings
+## Notes: My party greeting addon.
+## Author: Duenke
+## Version: 1.0.0
+## SavedVariables: DinksGreetingsDB
+## IconTexture: Interface\ICONS\Ability_mage_greaterinvisibility
+
+embeds.xml
+
+DinksGreetings.lua
