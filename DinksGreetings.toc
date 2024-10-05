@@ -4,7 +4,7 @@
 ## Author: Duenke
 ## Version: 1.0.0
 ## SavedVariables: DinksGreetingsDB
-## IconTexture: Interface\ICONS\Ability_mage_greaterinvisibility
+## IconTexture: Interface\ICONS\Spell_holy_rapture
 
 embeds.xml
 

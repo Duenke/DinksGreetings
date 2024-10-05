@@ -13,8 +13,9 @@ local IsInRaid = IsInRaid
 local random = random
 local SendChatMessage = SendChatMessage
 local UnitRace = UnitRace
+local SAY, EMOTE, PARTY, INSTANCE_CHAT = "SAY", "EMOTE", "PARTY", "INSTANCE_CHAT"
 
-local greetingsTable = {
+local greetingTable = {
 	["Human"] = {
 		"Hello there.",
 		"Greetings.",
@@ -334,7 +335,7 @@ local greetingsTable = {
 	["Dracthyr"] = {},
 }
 
-local leaveMessagesTable = {
+local farewellTable = {
 	["Human"] = {
 		"Farewell.",
 		"Be careful.",
@@ -518,7 +519,7 @@ local leaveMessagesTable = {
 		"Ride the winds.",
 		"Look to the skies.",
 		"Beware the deep places of the earth.",
-		"May An'she guide you." / "An'she guide you.",
+		"An'she guide you.",
 		"Together, we are Highmountain.",
 		"May your rivers be ever bountiful.",
 		"Sun and moon light your way.",
@@ -623,10 +624,9 @@ end
 function DinksGreetings:OnEnable()
 	self:Debug("OnEnable")
 
+	self:RegisterChatCommand("dgt", "HandleSlashCommand")
+	self:RegisterChatCommand("dinksgreet", "HandleSlashCommand")
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "HandleEnteringWorld")
-	self:RegisterEvent("GROUP_JOINED", "HandleGroupJoined")
-	-- self:RegisterEvent("GROUP_ROSTER_UPDATE", "HandleGroupRosterUpdate")
-	self:RegisterEvent("GROUP_LEFT", "HandleGroupLeft")
 	self:RegisterEvent("PLAYER_LEAVING_WORLD", "HandleLeavingWorld")
 end
 
@@ -647,65 +647,73 @@ end
 function DinksGreetings:HandleEnteringWorld()
 	self:Debug("HandleEnteringWorld")
 
-	self:Greet()
-end
-
-function DinksGreetings:HandleGroupJoined()
-	self:Debug("HandleGroupJoined")
-
-	self:Greet()
-end
-
-function DinksGreetings:HandleGroupRosterUpdate()
-	self:Debug("HandleGroupRosterUpdate")
-
-	self:Greet()
-end
-
-function DinksGreetings:HandleGroupLeft()
-	self:Debug("HandleGroupLeft")
-
-	self:Leave()
+	if IsInGroup() and not IsInRaid() then
+		self:Greet(PARTY)
+	else
+		self:Greet(EMOTE)
+	end
 end
 
 function DinksGreetings:HandleLeavingWorld()
 	self:Debug("HandleLeavingWorld")
 
-	self:Leave()
-end
-
-function DinksGreetings:Greet()
-	self:Debug("Greet")
-
-	if not IsInRaid() then
-		local greeting = self:GetRandomGreeting()
-		SendChatMessage(greeting, "EMOTE")
+	if IsInGroup() and not IsInRaid() then
+		self:Farewell(PARTY)
+	else
+		self:Farewell(EMOTE)
 	end
 end
 
-function DinksGreetings:GetRandomGreeting()
-	self:Debug("GetRandomGreeting")
+function DinksGreetings:HandleSlashCommand(command)
+	self:Debug("HandleSlashCommand: " .. command)
 
-	local playerRace = UnitRace("player")
-	local greetings = greetingsTable[playerRace]
-	local randomIndex = random(1, #greetings)
-	return greetings[randomIndex] or " "
+	local cmdParts = {}
+	local COMMAND = command:trim():upper()
+	for p in string.gmatch(COMMAND, "%S+") do
+		table.insert(cmdParts, p)
+	end
+
+	local command = cmdParts[1]
+	local channel = (
+		cmdParts[2] == SAY or cmdParts[2] == EMOTE or cmdParts[2] == PARTY or cmdParts[2] == INSTANCE_CHAT
+	) and cmdParts[2] or EMOTE
+
+	if command == "H" or command == "HELP" then
+		self:Print("DinksGreetings commands: SAY, EMOTE, PARTY, or INSTANCE_CHAT")
+		return
+	end
+
+	if command == "G" or command == "GREET" then
+		self:Greet(channel)
+		return
+	end
+
+	if command == "F" or command == "FAREWELL" then
+		self:Farewell(channel)
+		return
+	end
+
+	self:Greet(EMOTE)
 end
 
-function DinksGreetings:Leave()
+function DinksGreetings:Greet(channel)
+	self:Debug("Greet")
+
+	local playerRace = UnitRace("player")
+	local greetings = greetingTable[playerRace]
+	local randomIndex = random(1, #greetings)
+	local greeting = greetings[randomIndex] or "UNKNOWN RACE"
+	SendChatMessage(greeting, channel)
+end
+
+function DinksGreetings:Farewell(channel)
 	self:Debug("Leave")
 
-	local leaveMessage = self:GetRandomLeaveMessage()
-	SendChatMessage(leaveMessage, "EMOTE")
-end
-
-function DinksGreetings:GetRandomLeaveMessage()
-	self:Debug("GetRandomLeaveMessage")
-
 	local playerRace = UnitRace("player")
-	local leaveMessages = leaveMessagesTable[playerRace]
+	local leaveMessages = farewellTable[playerRace]
 	local randomIndex = random(1, #leaveMessages)
-	return leaveMessages[randomIndex] or " "
+	local leaveMessage = leaveMessages[randomIndex] or "UNKNOWN RACE"
+	SendChatMessage(leaveMessage, channel)
 end
 
 function DinksGreetings:Debug(message)
